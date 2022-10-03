@@ -10,6 +10,10 @@ const contact = contactPhone + contactSuffix
 const client = new Client({ authStrategy: new LocalAuth() })
 const app = express()
 
+app.get('/', (req, res) => {
+    res.send('OK')
+})
+
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 })
