@@ -20,7 +20,7 @@ client.on('qr', (qr) => {
 
 client.on('ready', () => {
     console.log('Client is ready!');
-    app.listen(3000, () => console.log('Express is ready!'))
+    app.listen(process.env.PORT || 3000, () => console.log('Express is ready!'))
     cron.schedule('0 11-20 * * *', () => {
         function randomBetween(min, max) {
             return Math.floor(
