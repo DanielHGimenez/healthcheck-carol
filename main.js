@@ -3,7 +3,7 @@ const express = require('express')
 const qrcode = require('qrcode-terminal')
 const cron = require('node-cron')
 
-const contactPhone = '554198571813'
+const contactPhone = '5541911111111'
 const contactSuffix = '@c.us'
 const contact = contactPhone + contactSuffix
 
