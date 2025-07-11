@@ -1,18 +1,60 @@
+process.env.TZ = 'America/Sao_Paulo';
 const { Client, LocalAuth } = require('whatsapp-web.js')
 const express = require('express')
 const qrcode = require('qrcode-terminal')
 const cron = require('node-cron')
 
-const contactPhone = '5541911111111'
+if (process.env.PHONE == null) {
+    throw new Error("Phone not found!");
+}
+
+const contactPhone = process.env.PHONE
 const contactSuffix = '@c.us'
 const contact = contactPhone + contactSuffix
 
 const client = new Client({ authStrategy: new LocalAuth() })
 const app = express()
 
+const nextId = 1
+const messages = []
+const morningExecution = { lastDayExecuted: 0 }
+const afternoonExecution = { lastDayExecuted: 0 }
+const nightExecution = { lastDayExecuted: 0 }
+
 app.get('/', (req, res) => {
     res.send('OK')
 })
+
+app.post('/messages', (req, res) => {
+    messages.push({
+        id: nextId,
+        text: req.body
+    })
+    nextId++
+})
+
+app.get('/messages', (req, res) => {
+    res.json(messages)
+})
+
+app.delete('/messages/:id', (req, res) => {
+    const messageID = parseInt(req.params.id)
+    messages.splice(messages.findIndex(message => message.id == messageID), 1)
+})
+
+function randomBetween(min, max) {
+    return Math.floor(
+        Math.random() * (max - min) + min
+    )
+}
+
+function sendMessages(lastHourToSend, execution) {
+    const now = Date.parse(Date.now().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }))
+    if (execution.lastDayExecuted != now.getDay() && (27 === randomBetween(1, 100) ||  lastHourToSend === now.getHours())) {
+        client.sendMessage(contact, 'Eae')
+        messages.forEach(message => client.sendMessage(contact, message.text))
+    }
+}
 
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
@@ -21,47 +63,9 @@ client.on('qr', (qr) => {
 client.on('ready', () => {
     console.log('Client is ready!');
     app.listen(process.env.PORT || 3000, () => console.log('Express is ready!'))
-    cron.schedule('0 11-20 * * *', () => {
-        function randomBetween(min, max) {
-            return Math.floor(
-                Math.random() * (max - min) + min
-            )
-        }
-
-        const phrasesHowUDoing = [
-            'Como andas?',
-            'Como vc está?',
-            'Como cê tá?'
-        ]
-
-        client.getChatById(contact)
-            .then(chat => chat.fetchMessages({ limit: 1 }))
-            .then(message => {
-                const dateLastMessage = Date.parse(
-                    Date.parse(message[0].timestamp * 1000)
-                        .toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-                )
-                const now = Date.parse(
-                    Date.now()
-                        .toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-                )
-
-                if (
-                    (
-                            dateLastMessage.getYear() < now.getYear()
-                        ||  dateLastMessage.getMonth() < now.getMonth()
-                        ||  dateLastMessage.getDay() < now.getDay()
-                        ||  dateLastMessage.getHours() <= 6
-                    ) && (
-                            27 === randomBetween(1, 100)
-                        ||  20 === now.getHours()
-                    )
-                ) {
-                    client.sendMessage(contact, 'E ae')
-                    client.sendMessage(contact, phrasesHowUDoing[randomBetween(0, 2)])
-                }
-            })
-    })
+    cron.schedule('* 11-13 * * *', sendMessages(13, morningExecution))
+    cron.schedule('* 15-16 * * *', sendMessages(16, afternoonExecution))
+    cron.schedule('* 19-23 * * *', sendMessages(23, nightExecution))
     console.log('Cron is ready!')
 })
 
