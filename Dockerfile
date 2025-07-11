@@ -14,4 +14,4 @@ RUN apt-get install ca-certificates fonts-liberation libappindicator3-1 libasoun
 # RUN apt-get install chromium -y
 RUN npm i
 
-ENTRYPOINT [ "node", "main.js" ]
+ENTRYPOINT [ "node", "main.js", "--no-sandbox" ]
